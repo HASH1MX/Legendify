@@ -23,11 +23,47 @@ builder.Services.AddScoped<IChampionService, ChampionService>();
 
 var app = builder.Build();
 
-// Auto-migrate database on startup
+// Auto-migrate database on startup with retry policy
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ChampionContext>();
-    db.Database.EnsureCreated();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<ChampionContext>();
+
+    try
+    {
+        logger.LogInformation("Attempting to apply database migrations...");
+        
+        // Simple retry logic
+        int retries = 5;
+        while (retries > 0)
+        {
+            try
+            {
+                if (context.Database.GetPendingMigrations().Any())
+                {
+                    context.Database.Migrate();
+                    logger.LogInformation("Database migrations applied successfully.");
+                }
+                else
+                {
+                    logger.LogInformation("No pending migrations found. Database is up to date.");
+                }
+                break; // Success
+            }
+            catch (Exception ex)
+            {
+                retries--;
+                logger.LogError(ex, "An error occurred while migrating the database. Retries remaining: {Retries}", retries);
+                if (retries == 0) throw;
+                Thread.Sleep(2000); // Wait 2 seconds before retrying
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
 }
 
 app.UseSwagger();
