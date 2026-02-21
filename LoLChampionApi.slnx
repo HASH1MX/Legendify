@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="LoLChampionApi.Tests/LoLChampionApi.Tests.csproj" />
+  <Project Path="LoLChampionApi/LoLChampionApi.csproj" />
+</Solution>
