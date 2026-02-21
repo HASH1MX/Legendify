@@ -44,6 +44,19 @@ services:
     networks:
       - lol-network
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://api:8080/api
+    depends_on:
+      - api
+    networks:
+      - lol-network
+
 networks:
   lol-network:
     driver: bridge
